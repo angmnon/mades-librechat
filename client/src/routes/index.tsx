@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import React from 'react';
 import {
   Login,
   VerifyEmail,
@@ -21,11 +22,21 @@ import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
 import Search from './Search';
 import Root from './Root';
+import MadesApiProvider from '~/components/_shared/MadesApiProvider';
+
+// MADES Page Lazy Imports
+const WorkspaceDashboard = React.lazy(() => import('~/components/Workspace/Dashboard'));
+const TaskCenter = React.lazy(() => import('~/components/TaskCenter/TaskCenter'));
+const ArtifactPage = React.lazy(() => import('~/components/Artifacts/ArtifactPage'));
+const HealthPanel = React.lazy(() => import('~/components/Health/HealthPanel'));
+const ReplayStudio = React.lazy(() => import('~/components/ReplayStudio/ReplayStudio'));
 
 const AuthLayout = () => (
   <AuthContextProvider>
     <WithRum>
-      <Outlet />
+      <MadesApiProvider>
+        <Outlet />
+      </MadesApiProvider>
     </WithRum>
     <ApiErrorWatcher />
   </AuthContextProvider>
@@ -184,6 +195,55 @@ export const router = createBrowserRouter(
                 <MarketplaceProvider>
                   <AgentMarketplace />
                 </MarketplaceProvider>
+              ),
+            },
+            // MADES Pages
+            {
+              path: 'workspace',
+              element: (
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-white">Loading...</div>}>
+                  <WorkspaceDashboard />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'workspace/:id',
+              element: (
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-white">Loading...</div>}>
+                  <WorkspaceDashboard />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'tasks/:taskId',
+              element: (
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-white">Loading...</div>}>
+                  <TaskCenter />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'artifacts/:id',
+              element: (
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-white">Loading...</div>}>
+                  <ArtifactPage />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'health',
+              element: (
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-white">Loading...</div>}>
+                  <HealthPanel />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'replay',
+              element: (
+                <Suspense fallback={<div className="flex h-full items-center justify-center text-white">Loading...</div>}>
+                  <ReplayStudio />
+                </Suspense>
               ),
             },
           ],
