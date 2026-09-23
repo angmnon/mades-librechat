@@ -18,6 +18,9 @@ const TYPE_OPTIONS = [
   { value: 'markdown', label: 'markdown (.md)' },
   { value: 'json', label: 'json (.json)' },
   { value: 'csv', label: 'csv (.csv)' },
+  { value: 'docx', label: 'Word (.docx)' },
+  { value: 'pdf', label: 'PDF (.pdf)' },
+  { value: 'pptx', label: 'PowerPoint (.pptx)' },
 ];
 
 export default function ExportModal({
@@ -68,7 +71,10 @@ export default function ExportModal({
     () => type === 'json' || type === 'csv' || type === 'webpage',
     [type],
   );
-  const exportOptionsSupport = useMemo(() => type !== 'csv' && type !== 'screenshot', [type]);
+  const exportOptionsSupport = useMemo(
+    () => !['csv', 'screenshot', 'docx', 'pdf', 'pptx'].includes(type),
+    [type],
+  );
 
   const { exportConversation } = useExportConversation({
     conversation,

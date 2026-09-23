@@ -10,6 +10,7 @@ import { useScreenshot } from '~/hooks/ScreenshotContext';
 import { formatMessageText } from './format';
 import { cleanupPreset } from '~/utils';
 import { useLocalize } from '~/hooks';
+import { exportDocument as exportDocgenDocument } from '~/components/Nav/ExportConversation/exportDocgen';
 
 type ExportValues = {
   fieldName: string;
@@ -267,6 +268,51 @@ export default function useExportConversation({
     download(blob, `${filename}.json`, 'application/json');
   };
 
+  const exportDocgen = async (format: 'docx' | 'pdf' | 'pptx') => {
+    // Build the same Markdown the markdown export uses (minus endpoint options, which the
+    // docgen engine has no concept of — keeping the exported document clean).
+    let md =
+      '# Conversation\n' +
+      `- conversationId: ${conversation?.conversationId}\n` +
+      `- endpoint: ${conversation?.endpoint}\n` +
+      `- title: ${conversation?.title}\n` +
+      `- exportAt: ${new Date().toTimeString()}\n`;
+
+    const messages = await buildMessageTree({
+      messageId: conversation?.conversationId,
+      message: null,
+      messages: getMessageTree(),
+      branches: false,
+      recursive: false,
+    });
+
+    const appendMessage = (message: TMessage) => {
+      md += `${formatMessageText({ message, format: 'md', localize })}\n`;
+      if (message?.error) {
+        md += '*(This is an error message)*\n';
+      }
+      if (message?.unfinished === true) {
+        md += '*(This is an unfinished message)*\n';
+      }
+      md += '\n\n';
+    };
+
+    md += '\n## History\n';
+    if (Array.isArray(messages)) {
+      for (const message of messages) {
+        if (message) {
+          appendMessage(message);
+        }
+      }
+    } else if (messages) {
+      appendMessage(messages as TMessage);
+    }
+
+    await exportDocgenDocument(md, filename, format, {
+      title: conversation?.title ?? filename,
+    });
+  };
+
   const exportConversation = () => {
     if (type === 'json') {
       exportJSON();
@@ -278,6 +324,8 @@ export default function useExportConversation({
       exportCSV();
     } else if (type == 'screenshot') {
       exportScreenshot();
+    } else if (type === 'docx' || type === 'pdf' || type === 'pptx') {
+      exportDocgen(type);
     }
   };
 
