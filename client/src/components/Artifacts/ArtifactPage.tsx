@@ -3,6 +3,12 @@
 // LibreChat: client/src/components/Artifacts/ArtifactPage.tsx
 // =============================================================================
 import React, { useState, useEffect } from "react";
+import {
+  exportDocument,
+  artifactToMarkdown,
+  safeFilename,
+  type DocFormat,
+} from "../Nav/ExportConversation/exportDocgen";
 
 interface ArtifactDetail {
   id: string; title: string; type: string; version: number;
@@ -49,10 +55,29 @@ export default function ArtifactPage({ artifactId }: { artifactId: string }) {
   }
 
   async function handleConvert(format: string) {
-    await fetch("/api/v1/artifacts/convert", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ artifactId, targetFormat: format }),
-    });
+    // HTML: the artifact already has a native HTML source — download it directly.
+    if (format === "html") {
+      const a = document.createElement("a");
+      a.href = artifact?.downloadUrl || `/api/v1/artifacts/${artifactId}/download`;
+      a.download = `${safeFilename(artifact?.title || artifactId)}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    }
+
+    // DOCX / PDF: render via the madesai-docgen Worker (no backend endpoint needed).
+    // The artifact backend in this fork is UI-only scaffolding, so we convert the
+    // artifact's HTML preview to Markdown and hand it to docgen.
+    try {
+      const markdown = artifactToMarkdown(artifact, previewContent);
+      await exportDocument(markdown, safeFilename(artifact?.title || artifactId), format as DocFormat, {
+        title: artifact?.title,
+      });
+    } catch (err) {
+      console.error("[artifact-export] failed", err);
+      alert(`Export failed: ${(err as Error)?.message || String(err)}`);
+    }
   }
 
   if (!artifact) return <div className="p-6 text-center">Loading...</div>;
